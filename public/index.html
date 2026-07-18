@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f1e8" />
+    <meta
+      name="description"
+      content="10초의 목소리 샘플로 나만의 AI 보이스를 만들고 원하는 문장을 읽어 보세요."
+    />
+    <title>My Voice AI — 내 목소리로 만드는 AI 나레이션</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="My Voice AI 홈">
+        <span class="brand-dot" aria-hidden="true"></span>
+        MY VOICE · AI
+      </a>
+      <div class="privacy-pill">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3 5 6v5c0 4.6 2.9 8.7 7 10 4.1-1.3 7-5.4 7-10V6l-7-3Z" />
+          <path d="m9.5 12 1.7 1.7 3.6-4" />
+        </svg>
+        API 키는 서버에만 보관
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="eyebrow"><span>VOICE CLONING STUDIO</span><span>01 — 03</span></div>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <h1>내 목소리,<br /><em>AI</em>가 대신<br />말해줘요.</h1>
+            <p>
+              짧게 녹음하고 문장만 적으세요.<br />쇼츠와 릴스용 나레이션을 내 목소리로
+              만들어 드려요.
+            </p>
+          </div>
+          <div class="voice-orbit" aria-hidden="true">
+            <div class="orbit-label">YOUR VOICE</div>
+            <div class="orbit-ring ring-one"></div>
+            <div class="orbit-ring ring-two"></div>
+            <div class="core">
+              <span class="bar bar-1"></span><span class="bar bar-2"></span
+              ><span class="bar bar-3"></span><span class="bar bar-4"></span
+              ><span class="bar bar-5"></span><span class="bar bar-6"></span
+              ><span class="bar bar-7"></span>
+            </div>
+            <span class="spark spark-one">✦</span><span class="spark spark-two">✦</span>
+          </div>
+        </div>
+      </section>
+
+      <div id="setupNotice" class="setup-notice hidden" role="status">
+        <strong>API 연결 전이에요.</strong>
+        <span><code>.env</code>에 <code>MINIMAX_API_KEY</code>를 넣으면 실제 생성이 시작됩니다.</span>
+      </div>
+
+      <section class="studio" aria-label="AI 보이스 만들기">
+        <article class="step-card" id="recordCard">
+          <div class="step-head">
+            <span class="step-number">01</span>
+            <div>
+              <p class="step-kicker">VOICE SAMPLE</p>
+              <h2>목소리를 들려주세요</h2>
+            </div>
+            <span class="step-state" id="sampleState">대기 중</span>
+          </div>
+
+          <p class="guide-copy">
+            조용한 곳에서 평소 말투로 10–60초 정도 읽어주세요. 감정과 억양이 다양할수록
+            더 자연스러워요.
+          </p>
+
+          <div class="prompt-box">
+            <span>추천 문장</span>
+            <p>
+              안녕하세요. 오늘은 제가 좋아하는 이야기를 들려드릴게요. 조금 놀라울 수도
+              있지만, 끝까지 편안하게 들어주세요.
+            </p>
+          </div>
+
+          <div class="recorder" id="recorder">
+            <button class="record-button" id="recordButton" type="button" aria-label="녹음 시작">
+              <span class="record-icon"></span>
+            </button>
+            <div class="record-info">
+              <strong id="recordLabel">눌러서 녹음하기</strong>
+              <span id="recordHint">최소 10초 · 최대 60초</span>
+            </div>
+            <time id="recordTimer">00:00</time>
+          </div>
+
+          <div id="samplePreview" class="sample-preview hidden">
+            <audio id="sampleAudio" controls></audio>
+            <button class="text-button" id="clearSampleButton" type="button">다시 선택</button>
+          </div>
+
+          <div class="or-divider"><span>또는</span></div>
+          <label class="upload-button" for="voiceFile">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" />
+            </svg>
+            음성 파일 불러오기
+            <small>MP3 · M4A · WAV / 20MB 이하</small>
+          </label>
+          <input id="voiceFile" type="file" accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav" hidden />
+
+          <label class="consent-row">
+            <input id="consent" type="checkbox" />
+            <span class="custom-check" aria-hidden="true"></span>
+            <span>본인의 목소리이며, AI 보이스 생성에 동의합니다.</span>
+          </label>
+
+          <button class="primary-button" id="cloneButton" type="button" disabled>
+            <span>내 AI 보이스 만들기</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+          </button>
+        </article>
+
+        <article class="step-card" id="scriptCard">
+          <div class="step-head">
+            <span class="step-number">02</span>
+            <div>
+              <p class="step-kicker">YOUR SCRIPT</p>
+              <h2>읽을 문장을 적어주세요</h2>
+            </div>
+            <span class="step-state" id="voiceState">보이스 필요</span>
+          </div>
+
+          <div id="voiceReady" class="voice-ready hidden">
+            <div class="mini-wave" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div><strong>내 보이스 준비 완료</strong><span id="voiceIdLabel"></span></div>
+            <button id="deleteVoiceButton" type="button">삭제</button>
+          </div>
+
+          <label class="script-field">
+            <span>나레이션 원고</span>
+            <textarea id="scriptText" maxlength="3000" rows="8" disabled>처음엔 저도 제 목소리를 듣는 게 조금 어색했어요. 그런데 이제는, 녹음을 여러 번 다시 하지 않아도 괜찮습니다. 제가 하고 싶은 말을 AI가 제 목소리로 자연스럽게 들려주거든요.</textarea>
+            <small><b id="characterCount">0</b> / 3,000자</small>
+          </label>
+
+          <div class="controls-row">
+            <label class="range-control">
+              <span><b>말하기 속도</b><output id="speedOutput">1.0×</output></span>
+              <input id="speed" type="range" min="0.5" max="2" value="1" step="0.1" disabled />
+            </label>
+            <label class="range-control">
+              <span><b>목소리 높이</b><output id="pitchOutput">0</output></span>
+              <input id="pitch" type="range" min="-12" max="12" value="0" step="1" disabled />
+            </label>
+          </div>
+
+          <button class="primary-button coral" id="generateButton" type="button" disabled>
+            <span>내 목소리로 생성하기</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+          </button>
+        </article>
+
+        <article class="step-card result-card" id="resultCard">
+          <div class="step-head">
+            <span class="step-number">03</span>
+            <div>
+              <p class="step-kicker">YOUR AUDIO</p>
+              <h2>완성된 목소리를 들어보세요</h2>
+            </div>
+            <span class="step-state">MP3</span>
+          </div>
+
+          <div class="result-empty" id="resultEmpty">
+            <div class="empty-disc" aria-hidden="true"><span></span></div>
+            <p>목소리를 만들면<br />여기에 결과가 나타나요.</p>
+          </div>
+
+          <div class="result-player hidden" id="resultPlayer">
+            <div class="result-art" aria-hidden="true">
+              <span>MY<br />VOICE</span>
+              <div class="result-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+            <div class="result-meta">
+              <span>AI NARRATION</span>
+              <strong>나의 새로운 나레이션</strong>
+              <audio id="resultAudio" controls></audio>
+            </div>
+            <a class="download-button" id="downloadButton" download="my-voice-ai.mp3">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5M5 20h14" />
+              </svg>
+              MP3 받기
+            </a>
+          </div>
+        </article>
+      </section>
+
+      <section class="privacy-note">
+        <span class="big-asterisk">*</span>
+        <div>
+          <h2>내 목소리는 소중하니까.</h2>
+          <p>
+            녹음 파일은 보이스 생성을 위해 MiniMax로 전송됩니다. 타인의 목소리를 허락 없이
+            복제하지 마세요. 원할 때 생성한 보이스를 바로 삭제할 수 있습니다.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+    <footer>
+      <span>MY VOICE · AI</span>
+      <p>당신의 이야기는, 당신의 목소리로.</p>
+      <span>POWERED BY MINIMAX</span>
+    </footer>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
