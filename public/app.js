@@ -2,6 +2,9 @@ const $ = (selector) => document.querySelector(selector);
 
 const elements = {
   setupNotice: $("#setupNotice"),
+  noticeTitle: $("#noticeTitle"),
+  noticeCopy: $("#noticeCopy"),
+  demoStartButton: $("#demoStartButton"),
   recorder: $("#recorder"),
   recordButton: $("#recordButton"),
   recordLabel: $("#recordLabel"),
@@ -46,6 +49,9 @@ let timerId = null;
 let sampleUrl = null;
 let resultUrl = null;
 let toastId = null;
+let demoMode = false;
+
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function showToast(message) {
   elements.toast.textContent = message;
@@ -249,6 +255,13 @@ elements.cloneButton.addEventListener("click", async () => {
   form.append("voice", voiceFile);
   form.append("consent", String(elements.consent.checked));
   try {
+    if (demoMode) {
+      await wait(1400);
+      setVoiceReady("MyVoice_Demo_2026");
+      showToast("Mock AI 보이스가 준비됐어요!");
+      $("#scriptCard").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const response = await fetch("/api/voices/clone", { method: "POST", body: form });
     if (!response.ok) throw new Error(await getError(response));
     const payload = await response.json();
@@ -272,6 +285,26 @@ elements.pitch.addEventListener("input", () => { elements.pitchOutput.textConten
 elements.generateButton.addEventListener("click", async () => {
   setBusy(elements.generateButton, true, "나레이션 만드는 중…");
   try {
+    if (demoMode) {
+      await wait(1600);
+      releaseUrl(resultUrl);
+      resultUrl = "/demo-voice.mp3";
+      elements.resultAudio.src = resultUrl;
+      elements.downloadButton.href = resultUrl;
+      elements.resultEmpty.classList.add("hidden");
+      elements.resultPlayer.classList.remove("hidden");
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(elements.scriptText.value);
+        utterance.lang = "ko-KR";
+        utterance.rate = Number(elements.speed.value);
+        utterance.pitch = Math.max(0.1, Math.min(2, 1 + Number(elements.pitch.value) / 12));
+        window.speechSynthesis.speak(utterance);
+      }
+      showToast("Mock 나레이션이 완성됐어요.");
+      $("#resultCard").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const response = await fetch("/api/speech", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -295,8 +328,10 @@ elements.generateButton.addEventListener("click", async () => {
 
 elements.deleteVoiceButton.addEventListener("click", async () => {
   try {
-    const response = await fetch(`/api/voices/${encodeURIComponent(voiceId)}`, { method: "DELETE" });
-    if (!response.ok) throw new Error(await getError(response));
+    if (!demoMode) {
+      const response = await fetch(`/api/voices/${encodeURIComponent(voiceId)}`, { method: "DELETE" });
+      if (!response.ok) throw new Error(await getError(response));
+    }
     voiceId = null;
     sessionStorage.removeItem("myVoiceId");
     elements.voiceReady.classList.add("hidden");
@@ -313,6 +348,25 @@ elements.deleteVoiceButton.addEventListener("click", async () => {
   }
 });
 
+elements.demoStartButton.addEventListener("click", async () => {
+  elements.demoStartButton.disabled = true;
+  elements.demoStartButton.textContent = "샘플 불러오는 중…";
+  try {
+    const response = await fetch("/demo-voice.mp3");
+    const blob = await response.blob();
+    setSample(new File([blob], "build-week-sample.mp3", { type: "audio/mpeg" }), 18);
+    elements.consent.checked = true;
+    updateControls();
+    $("#recordCard").scrollIntoView({ behavior: "smooth", block: "center" });
+    showToast("샘플 보이스를 불러왔어요. 이제 AI 보이스를 만들어 보세요.");
+  } catch {
+    showToast("샘플 보이스를 불러오지 못했어요.");
+  } finally {
+    elements.demoStartButton.disabled = false;
+    elements.demoStartButton.textContent = "샘플 보이스로 시작 →";
+  }
+});
+
 async function initialize() {
   elements.characterCount.textContent = elements.scriptText.value.length.toLocaleString("ko-KR");
   if (voiceId) setVoiceReady(voiceId);
@@ -320,9 +374,14 @@ async function initialize() {
   try {
     const response = await fetch("/api/health");
     const health = await response.json();
-    elements.setupNotice.classList.toggle("hidden", health.ready);
+    demoMode = !health.ready;
   } catch {
-    elements.setupNotice.classList.remove("hidden");
+    demoMode = true;
+  }
+  elements.setupNotice.classList.toggle("hidden", !demoMode);
+  if (demoMode) {
+    elements.noticeTitle.textContent = "INTERACTIVE DEMO";
+    elements.noticeCopy.textContent = "API 키나 외부 업로드 없이 전체 제품 흐름을 체험할 수 있어요.";
   }
 }
 

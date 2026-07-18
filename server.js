@@ -33,7 +33,7 @@ app.use(express.json({ limit: "64kb" }));
 app.use(express.static("public", { extensions: ["html"] }));
 
 app.get("/api/health", (_request, response) => {
-  response.json({ ready: Boolean(apiKey) });
+  response.json({ ready: Boolean(apiKey), mode: apiKey ? "live" : "demo" });
 });
 
 app.post("/api/voices/clone", upload.single("voice"), async (request, response, next) => {

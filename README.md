@@ -1,6 +1,10 @@
 # My Voice AI
 
-내 목소리 샘플을 MiniMax Voice Clone API로 복제하고, 원하는 문장을 같은 목소리의 MP3 나레이션으로 만드는 작은 웹앱입니다.
+내 목소리 샘플을 AI 보이스로 복제하고, 원하는 문장을 같은 목소리의 MP3 나레이션으로 만드는 크리에이터용 웹 스튜디오입니다. OpenAI Build Week 제출을 위해 API 키 없이 체험 가능한 interactive mock demo를 제공합니다.
+
+## 공개 데모
+
+공개 배포에서는 샘플 보이스, 보이스 학습, 문장 생성, 재생과 다운로드까지 전체 UX를 mock으로 체험할 수 있습니다. 실제 음성 파일은 외부로 전송되지 않습니다. 로컬에서 `MINIMAX_API_KEY`를 설정하면 동일한 UI가 실제 MiniMax Voice Clone API를 사용합니다.
 
 ## 실행
 
@@ -8,10 +12,12 @@
 npm install
 cp .env.example .env
 # .env에 MiniMax API 키 입력
-npm run dev
+npm run api
 ```
 
 브라우저에서 `http://localhost:3000`을 엽니다.
+
+공개 mock 사이트 개발 서버는 `npm run dev`, 배포 빌드는 `npm run build`를 사용합니다.
 
 ## 사용 흐름
 
