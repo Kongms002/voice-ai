@@ -5,4 +5,6 @@ npm-debug.log*
 dist/
 .next/
 .wrangler/
+gpu_api/.venv/
+gpu_api/data/
 *.tsbuildinfo

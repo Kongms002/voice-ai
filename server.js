@@ -2,10 +2,13 @@ import "dotenv/config";
 import express from "express";
 import multer from "multer";
 import { AppError, cloneVoice, deleteVoice, synthesizeSpeech } from "./lib/minimax.js";
+import { remoteBatchSpeech, remoteCloneVoice, remoteDeleteVoice, remoteSynthesizeSpeech } from "./lib/remote-tts.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const apiKey = process.env.MINIMAX_API_KEY;
+const remoteTtsUrl = process.env.REMOTE_TTS_URL?.replace(/\/$/, "");
+const remoteTtsApiKey = process.env.REMOTE_TTS_API_KEY;
 const allowedMimeTypes = new Set([
   "audio/mpeg",
   "audio/mp3",
@@ -29,11 +32,11 @@ const upload = multer({
 });
 
 app.disable("x-powered-by");
-app.use(express.json({ limit: "64kb" }));
+app.use(express.json({ limit: "512kb" }));
 app.use(express.static("public", { extensions: ["html"] }));
 
 app.get("/api/health", (_request, response) => {
-  response.json({ ready: Boolean(apiKey), mode: apiKey ? "live" : "demo" });
+  response.json({ ready: Boolean(remoteTtsUrl || apiKey), mode: remoteTtsUrl ? "remote-gpu" : apiKey ? "minimax" : "demo" });
 });
 
 app.post("/api/voices/clone", upload.single("voice"), async (request, response, next) => {
@@ -45,7 +48,9 @@ app.post("/api/voices/clone", upload.single("voice"), async (request, response, 
       throw new AppError("목소리 파일을 녹음하거나 선택해 주세요.", 400);
     }
 
-    const result = await cloneVoice({ apiKey, file: request.file });
+    const result = remoteTtsUrl
+      ? await remoteCloneVoice({ baseUrl: remoteTtsUrl, apiKey: remoteTtsApiKey, file: request.file })
+      : await cloneVoice({ apiKey, file: request.file });
     response.status(201).json(result);
   } catch (error) {
     next(error);
@@ -54,9 +59,11 @@ app.post("/api/voices/clone", upload.single("voice"), async (request, response, 
 
 app.post("/api/speech", async (request, response, next) => {
   try {
-    const result = await synthesizeSpeech({ apiKey, ...request.body });
+    const result = remoteTtsUrl
+      ? await remoteSynthesizeSpeech({ baseUrl: remoteTtsUrl, apiKey: remoteTtsApiKey, ...request.body })
+      : await synthesizeSpeech({ apiKey, ...request.body });
     response.set({
-      "Content-Type": "audio/mpeg",
+      "Content-Type": result.contentType || "audio/mpeg",
       "Content-Length": result.audio.length,
       "X-Usage-Characters": result.usageCharacters,
       "Cache-Control": "no-store",
@@ -67,9 +74,32 @@ app.post("/api/speech", async (request, response, next) => {
   }
 });
 
+app.post("/api/speech/batch", async (request, response, next) => {
+  try {
+    if (!remoteTtsUrl) {
+      throw new AppError("자막 배치 생성은 REMOTE_TTS_URL이 설정된 GPU 서버에서만 사용할 수 있어요.", 503);
+    }
+    const { voiceId, subtitles, speed, pitch } = request.body;
+    if (!Array.isArray(subtitles) || subtitles.length === 0) {
+      throw new AppError("생성할 자막 목록이 필요해요.", 400);
+    }
+    const archive = await remoteBatchSpeech({ baseUrl: remoteTtsUrl, apiKey: remoteTtsApiKey, voiceId, subtitles, speed, pitch });
+    response.set({
+      "Content-Type": "application/zip",
+      "Content-Disposition": 'attachment; filename="voiceover.zip"',
+      "Content-Length": archive.length,
+      "Cache-Control": "no-store",
+    });
+    response.send(archive);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.delete("/api/voices/:voiceId", async (request, response, next) => {
   try {
-    await deleteVoice({ apiKey, voiceId: request.params.voiceId });
+    if (remoteTtsUrl) await remoteDeleteVoice({ baseUrl: remoteTtsUrl, apiKey: remoteTtsApiKey, voiceId: request.params.voiceId });
+    else await deleteVoice({ apiKey, voiceId: request.params.voiceId });
     response.status(204).end();
   } catch (error) {
     next(error);

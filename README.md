@@ -23,6 +23,49 @@ npm run api
 
 공개 mock 사이트 개발 서버는 `npm run dev`, 배포 빌드는 `npm run build`를 사용합니다.
 
+## 원격 GPU TTS 서버
+
+`gpu_api/`는 GPU 머신에서 보이스 프로필을 저장하고 음성 모델을 실행하는 FastAPI 서비스입니다. 로컬 웹 서버는 `REMOTE_TTS_URL`이 설정되면 MiniMax 대신 이 서버로 보이스 생성·음성 합성·삭제 요청을 프록시합니다.
+
+```bash
+# GPU 서버
+cd gpu_api
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# .env에 TTS_API_KEY, VOICE_PROFILE_DIR, TTS_COMMAND_TEMPLATE 설정
+set -a && source .env && set +a
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+# 로컬 개발 머신: 원격 API를 공개하지 않고 SSH 터널로 연결
+ssh -N -L 8001:127.0.0.1:8000 your-gpu-host
+```
+
+로컬 `.env`에는 아래를 설정한 뒤 `npm run api`를 실행합니다.
+
+```bash
+REMOTE_TTS_URL=http://127.0.0.1:8001
+REMOTE_TTS_API_KEY=GPU_서버의_TTS_API_KEY와_동일한_값
+```
+
+16GB VRAM 기준 기본 경로는 GPT-SoVITS입니다. GPU 서버에서 GPT-SoVITS의 `api_v2.py`를 `127.0.0.1:9880`으로 실행하고, `gpu_api/.env`의 `GPT_SOVITS_URL=http://127.0.0.1:9880`을 설정하세요. voiceme FastAPI가 `/tts`에 한국어 텍스트와 서버 내 reference audio 경로를 전달하고 받은 WAV를 로컬 앱에 반환합니다. GPT-SoVITS API는 reference audio, 텍스트, 언어, 속도, 미디어 타입을 받는 `/tts` 엔드포인트를 제공합니다. [공식 API 구현](https://github.com/RVC-Boss/GPT-SoVITS/blob/main/api_v2.py)
+
+다른 엔진을 쓰고 싶으면 `TTS_COMMAND_TEMPLATE`에 실행 스크립트를 넣으면 됩니다. `{reference_audio}`, `{text_file}`, `{output_file}`, `{speed}`, `{pitch}` 플레이스홀더를 지원합니다.
+
+여러 자막을 한 번에 생성할 때는 로컬 서버의 `POST /api/speech/batch`에 아래 형식으로 요청합니다. 응답은 각 자막 오디오와 `manifest.json`이 들어 있는 ZIP입니다.
+
+```json
+{
+  "voiceId": "voice_1234",
+  "subtitles": [
+    { "id": "001", "text": "첫 번째 자막", "start_ms": 0, "end_ms": 1800 },
+    { "id": "002", "text": "두 번째 자막", "start_ms": 1900, "end_ms": 3600 }
+  ],
+  "speed": 1,
+  "pitch": 0
+}
+```
+
 ## 사용 흐름
 
 1. 조용한 곳에서 10–60초 녹음하거나 mp3/m4a/wav 파일을 선택합니다.
