@@ -2,6 +2,10 @@
 
 내 목소리 샘플을 AI 보이스로 복제하고, 원하는 문장을 같은 목소리의 MP3 나레이션으로 만드는 크리에이터용 웹 스튜디오입니다. OpenAI Build Week 제출을 위해 API 키 없이 체험 가능한 interactive mock demo를 제공합니다.
 
+## Built with Codex and GPT-5.6
+
+Codex와 GPT-5.6은 이 프로젝트의 제품 설계와 구현 전반에 사용했습니다. 음성 복제 UX와 동의·삭제 정책을 설계하고, MiniMax 서버 프록시와 브라우저 녹음 흐름을 구현했으며, API 키 없이 심사할 수 있는 interactive mock demo, 테스트, 배포 자산과 Devpost 데모 영상을 만들었습니다.
+
 ## 공개 데모
 
 공개 배포에서는 샘플 보이스, 보이스 학습, 문장 생성, 재생과 다운로드까지 전체 UX를 mock으로 체험할 수 있습니다. 실제 음성 파일은 외부로 전송되지 않습니다. 로컬에서 `MINIMAX_API_KEY`를 설정하면 동일한 UI가 실제 MiniMax Voice Clone API를 사용합니다.
