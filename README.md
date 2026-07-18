@@ -50,6 +50,11 @@ REMOTE_TTS_API_KEY=GPU_서버의_TTS_API_KEY와_동일한_값
 
 16GB VRAM 기준 기본 경로는 GPT-SoVITS입니다. GPU 서버에서 GPT-SoVITS의 `api_v2.py`를 `127.0.0.1:9880`으로 실행하고, `gpu_api/.env`의 `GPT_SOVITS_URL=http://127.0.0.1:9880`을 설정하세요. voiceme FastAPI가 `/tts`에 한국어 텍스트와 서버 내 reference audio 경로를 전달하고 받은 WAV를 로컬 앱에 반환합니다. GPT-SoVITS API는 reference audio, 텍스트, 언어, 속도, 미디어 타입을 받는 `/tts` 엔드포인트를 제공합니다. [공식 API 구현](https://github.com/RVC-Boss/GPT-SoVITS/blob/main/api_v2.py)
 
+```bash
+# GPT-SoVITS checkout on the GPU host
+python api_v2.py -a 127.0.0.1 -p 9880
+```
+
 다른 엔진을 쓰고 싶으면 `TTS_COMMAND_TEMPLATE`에 실행 스크립트를 넣으면 됩니다. `{reference_audio}`, `{text_file}`, `{output_file}`, `{speed}`, `{pitch}` 플레이스홀더를 지원합니다.
 
 여러 자막을 한 번에 생성할 때는 로컬 서버의 `POST /api/speech/batch`에 아래 형식으로 요청합니다. 응답은 각 자막 오디오와 `manifest.json`이 들어 있는 ZIP입니다.

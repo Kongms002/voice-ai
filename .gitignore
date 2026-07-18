@@ -7,4 +7,5 @@ dist/
 .wrangler/
 gpu_api/.venv/
 gpu_api/data/
+gpu_api/gpu_api/
 *.tsbuildinfo
